@@ -136,15 +136,21 @@ class Hourglass(nn.HybridBlock):
 
         return x
 
-# test
-if __name__ == "__main__":
+def getHourGlass(ctx):
     model = Hourglass()
-    model.initialize()
+    model.initialize(ctx=ctx)
     model.hybridize()
-    print(model)
+    return model
 
-    in_data = mx.nd.random.uniform(-1, 1, shape=[1,3,256,256])
-    out = model(in_data)
-    sw = SummaryWriter(logdir='./logs', flush_secs=5)
-    sw.add_graph(model)
-    sw.close()
+# test
+# if __name__ == "__main__":
+#     model = Hourglass()
+#     model.initialize()
+#     model.hybridize()
+#     print(model)
+
+#     in_data = mx.nd.random.uniform(-1, 1, shape=[1,3,256,256])
+#     out = model(in_data)
+#     sw = SummaryWriter(logdir='./logs', flush_secs=5)
+#     sw.add_graph(model)
+#     sw.close()
