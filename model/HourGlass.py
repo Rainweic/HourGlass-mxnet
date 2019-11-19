@@ -96,6 +96,7 @@ class Hourglass(nn.HybridBlock):
     def __init__(self, nStack=8, **kwargs):
         super(Hourglass, self).__init__(**kwargs)
         self.nStack = nStack
+        self.mid_feature_map = []
 
         # HourglassBlock模块之前的图片处理模块
         self.preprocess = nn.HybridSequential()
@@ -108,27 +109,29 @@ class Hourglass(nn.HybridBlock):
             self.preprocess.add(Residual(128, 128))
             self.preprocess.add(Residual(128, 256))
 
-        
-        self.out = nn.HybridSequential()
         # HourglassBlock模块
-        self.hourglass_block = nn.HybridSequential()
-        with self.hourglass_block.name_scope():
-            for i in range(self.nStack):
-                self.hourglass_block.add(HourGlassBlock(4, 256))
-                self.hourglass_block.add(Residual(256, 256))
-                self.hourglass_block.add(Lin(256))
-                self.conv_temp_out = nn.Conv2D(16, (1, 1), (1, 1))
-                self.hourglass_block.add(self.conv_temp_out)
-                # TODO 添加conv_temp_out到self.out
-                
-                if i < self.nStack:
-                    self.hourglass_block.add(nn.Conv2D(256, (1, 1), (1, 1)))
-                    # TODO 这里还有一个操作
+        self.hg = HourGlassBlock(4, 256)
+        self.residual = Residual(256, 256)
+        self.lin = Lin(256)
+        self.temp_out = nn.Conv2D(16, (1, 1), (1, 1), (0, 0))
+        self.conv1 = nn.Conv2D(256, (1, 1), (1, 1), (0, 0))
+        self.conv2 = nn.Conv2D(256, (1, 1), (1, 1), (0, 0))
 
     def hybrid_forward(self, F, x):
         x = self.preprocess(x)
-        x = self.hourglass_block(x)
-        # TODO return 的不是 x 肯定还有其他操作
+        for _ in range(self.nStack):
+            ori_x = x
+            x = self.hg(ori_x)
+            x = self.residual(x)
+            x = self.lin(x)
+            x = self.temp_out(x)
+            self.mid_feature_map.append(x)
+
+            if _ < self.nStack:
+                x1 = self.conv1(x)
+                x2 = self.conv2(x)
+                x = ori_x + x1 + x2
+
         return x
 
 if __name__ == "__main__":
