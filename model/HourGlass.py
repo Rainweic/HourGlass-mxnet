@@ -99,7 +99,7 @@ class Hourglass(nn.HybridBlock):
         self.mid_feature_map = []
 
         # HourglassBlock模块之前的图片处理模块
-        self.preprocess = nn.HybridSequential()
+        self.preprocess = nn.HybridSequential(prefix="pre")
         with self.preprocess.name_scope():
             self.preprocess.add(nn.Conv2D(64, 7, (2, 2), (3, 3)))
             self.preprocess.add(nn.BatchNorm())
@@ -110,38 +110,40 @@ class Hourglass(nn.HybridBlock):
             self.preprocess.add(Residual(128, 256))
 
         # HourglassBlock模块
-        self.hg = HourGlassBlock(4, 256)
-        self.residual = Residual(256, 256)
-        self.lin = Lin(256)
-        self.temp_out = nn.Conv2D(16, (1, 1), (1, 1), (0, 0))
-        self.conv1 = nn.Conv2D(256, (1, 1), (1, 1), (0, 0))
-        self.conv2 = nn.Conv2D(256, (1, 1), (1, 1), (0, 0))
+        self.hourglass_blocks = nn.HybridSequential(prefix="hg")
+        with self.hourglass_blocks.name_scope():
+            for _ in range(self.nStack):
+                hourglass_block = nn.HybridSequential()
+                hourglass_block.add(HourGlassBlock(4, 256))
+                hourglass_block.add(Residual(256, 256))
+                hourglass_block.add(Lin(256))
+                hourglass_block.add(nn.Conv2D(16, (1, 1), (1, 1), (0, 0)))
+                self.hourglass_blocks.add(hourglass_block)
+            self.conv1 = nn.Conv2D(256, (1, 1), (1, 1), (0, 0))
+            self.conv2 = nn.Conv2D(256, (1, 1), (1, 1), (0, 0))
 
     def hybrid_forward(self, F, x):
         x = self.preprocess(x)
-        for _ in range(self.nStack):
-            ori_x = x
-            x = self.hg(ori_x)
-            x = self.residual(x)
-            x = self.lin(x)
-            x = self.temp_out(x)
+        for i in range(self.nStack):
+            temp_x = x
+            x = self.hourglass_blocks[i](x)
             self.mid_feature_map.append(x)
 
-            if _ < self.nStack:
+            if i < self.nStack:
                 x1 = self.conv1(x)
                 x2 = self.conv2(x)
-                x = ori_x + x1 + x2
+                x = temp_x + x1 + x2
 
         return x
 
 if __name__ == "__main__":
-    model = Hourglass(nStack=1)
+    model = Hourglass()
     model.initialize()
     model.hybridize()
     print(model)
 
     in_data = mx.nd.random.uniform(-1, 1, shape=[1,3,256,256])
     out = model(in_data)
-    sw = SummaryWriter(logdir='./logs', flush_secs=5)
-    sw.add_graph(model)
-    sw.close()
+    # sw = SummaryWriter(logdir='./logs', flush_secs=5)
+    # sw.add_graph(model)
+    # sw.close()
