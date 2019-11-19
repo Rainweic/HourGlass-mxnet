@@ -52,24 +52,32 @@ class HourGlass(nn.HybridBlock):
         self.in_channels = in_channels
         self.input_model = input_model
 
-    def hybrid_forward(self, F, x):
         # Upper branch
-        up1 = Residual(self.in_channels, self.in_channels)(x)
+        self.up1 = Residual(self.in_channels, self.in_channels)
 
         # Lower branch
-        low1 = nn.MaxPool2D((2, 2), (2, 2))(x)
-        low1 = Residual(self.in_channels, self.in_channels)(low1)
+        self.low1_MaxPool = nn.MaxPool2D((2, 2), (2, 2))
+        self.low1 = Residual(self.in_channels, self.in_channels)
 
         if self.n > 1:
-            low2 = HourGlass(self.n - 1, self.in_channels, low1)
+            self.low2 = HourGlass(self.n - 1, self.in_channels, self.low1)
         else:
-            low2 = Residual(self.in_channels, self.in_channels)(low1)
+            self.low2 = Residual(self.in_channels, self.in_channels)
 
-        low3 = Residual(self.in_channels, self.in_channels)(low2)
+        self.low3 = Residual(self.in_channels, self.in_channels)
 
-        up2 = F.UpSampling(low3, sample_type="nearest")
-        
+    def hybrid_forward(self, F, x):
+        up1 = self.up1(x)
+
+        x = self.low1_MaxPool(x)
+        x = self.low1(x)
+        x = self.low2(x)
+        x = self.low3(x)
+
+        up2 = F.UpSampling(x, scale=2, sample_type="nearest")
+
         return up1 + up2
+
 
 if __name__ == "__main__":
     input = mx.nd.random.uniform(-1, 1, shape=(1,3,256,256))
