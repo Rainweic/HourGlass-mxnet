@@ -136,6 +136,7 @@ class Hourglass(nn.HybridBlock):
 
         return x
 
+# test
 if __name__ == "__main__":
     model = Hourglass()
     model.initialize()
@@ -144,6 +145,6 @@ if __name__ == "__main__":
 
     in_data = mx.nd.random.uniform(-1, 1, shape=[1,3,256,256])
     out = model(in_data)
-    # sw = SummaryWriter(logdir='./logs', flush_secs=5)
-    # sw.add_graph(model)
-    # sw.close()
+    sw = SummaryWriter(logdir='./logs', flush_secs=5)
+    sw.add_graph(model)
+    sw.close()
