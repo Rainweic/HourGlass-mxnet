@@ -28,11 +28,13 @@ class Residual(nn.HybridBlock):
             with self.residual_skip.name_scope():
                 self.residual_skip.add(nn.Conv2D(self.out_channels, (1, 1)))
         
-    def hybrid_forward(self, F, in_data):    
-        x = in_data
+    def hybrid_forward(self, F, x):    
+        temp_x = x
         x = self.residual_conv(x)
         if not self.in_channels == self.out_channels:
-            x = x + self.residual_skip(in_data)
+            x = x + self.residual_skip(temp_x)
+        else:
+            x = x + temp_x
         return x
 
 class HourGlassBlock(nn.HybridBlock):
@@ -136,21 +138,19 @@ class Hourglass(nn.HybridBlock):
 
         return x
 
-def getHourGlass(ctx):
+def getHourGlass(ctx=mx.cpu()):
     model = Hourglass()
     model.initialize(ctx=ctx)
     model.hybridize()
     return model
 
 # test
-# if __name__ == "__main__":
-#     model = Hourglass()
-#     model.initialize()
-#     model.hybridize()
-#     print(model)
+if __name__ == "__main__":
 
-#     in_data = mx.nd.random.uniform(-1, 1, shape=[1,3,256,256])
-#     out = model(in_data)
-#     sw = SummaryWriter(logdir='./logs', flush_secs=5)
-#     sw.add_graph(model)
-#     sw.close()
+    model = getHourGlass()
+    in_data = mx.nd.random.uniform(-1, 1, shape=[1,3,256,256])
+    out = model(in_data)
+    print(out)
+    sw = SummaryWriter(logdir='./logs', flush_secs=5)
+    sw.add_graph(model)
+    sw.close()
