@@ -98,7 +98,7 @@ class Hourglass(nn.HybridBlock):
     def __init__(self, nStack=8, **kwargs):
         super(Hourglass, self).__init__(**kwargs)
         self.nStack = nStack
-        self.mid_feature_map = []
+        self.out = []
 
         # HourglassBlock模块之前的图片处理模块
         self.preprocess = nn.HybridSequential(prefix="pre")
@@ -129,14 +129,14 @@ class Hourglass(nn.HybridBlock):
         for i in range(self.nStack):
             temp_x = x
             x = self.hourglass_blocks[i](x)
-            self.mid_feature_map.append(x)
+            self.out.append(x)
 
             if i < self.nStack:
                 x1 = self.conv1(x)
                 x2 = self.conv2(x)
                 x = temp_x + x1 + x2
 
-        return x
+        return self.out
 
 def getHourGlass(ctx=mx.cpu()):
     model = Hourglass()
