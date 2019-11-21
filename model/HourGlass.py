@@ -148,9 +148,10 @@ def getHourGlass(ctx=mx.cpu()):
 if __name__ == "__main__":
 
     model = getHourGlass()
-    in_data = mx.nd.random.uniform(-1, 1, shape=[1,3,256,256])
+    in_data = mx.nd.random.uniform(-1, 1, shape=[3,3,256,256])
     out = model(in_data)
-    print(out)
-    sw = SummaryWriter(logdir='./logs', flush_secs=5)
-    sw.add_graph(model)
-    sw.close()
+    # print(len(out))
+    # print(out[0].shape)
+    # sw = SummaryWriter(logdir='./logs', flush_secs=5)
+    # sw.add_graph(model)
+    # sw.close()
