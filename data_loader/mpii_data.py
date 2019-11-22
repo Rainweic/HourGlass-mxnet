@@ -1,9 +1,12 @@
 import os
+os.path.join("..")
 import json
 import random
 import cv2 as cv
 import mxnet as mx
 import numpy as np
+
+from tools.img_tool import *
 
 class MPIIData(mx.gluon.data.Dataset):
     # 部分代码参考至 感谢提供了学习资源
@@ -60,6 +63,10 @@ class MPIIData(mx.gluon.data.Dataset):
         if not self.is_train:
             assert (self.rot_flag == False), 'rot_flag must be off in val model'
 
+        cropimg, gtmap, metainfo = self._process_img(idx)
+
+        return cropimg, gtmap, metainfo
+
     def _process_img(self, idx):
         '''
         预处理图片
@@ -89,6 +96,25 @@ class MPIIData(mx.gluon.data.Dataset):
             rot = np.random.randint(-1 * 30, 30)
         else:
             rot = 0
+
+        cropimg = crop(img, center, scale, self.inres, rot)
+        cropimg = normalize(cropimg, self.mean)
+
+        # transform keypoints
+        transformedKps = transform_kp(joints, center, scale, self.outres, rot)
+        gtmap = generate_gtmap(transformedKps, self.sigma, self.outres)
+
+        # meta info
+        metainfo = {
+            'sample_index': idx,
+            'center': center,
+            'scale': scale,
+            'pts': joints, 
+            'tpts': transformedKps, 
+            'name': img_name
+        }
+
+        return cropimg, gtmap, metainfo
 
     def flip(self, img, joints, center):
         joints = np.copy(joints)
