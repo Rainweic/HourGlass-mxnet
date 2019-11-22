@@ -6,6 +6,7 @@ import cv2 as cv
 import mxnet as mx
 import numpy as np
 
+from tqdm import tqdm
 from tools.img_tool import *
 
 class MPIIData(mx.gluon.data.Dataset):
@@ -50,13 +51,28 @@ class MPIIData(mx.gluon.data.Dataset):
     def _get_mean_std(self):
         mean = np.zeros(3)
         std = np.zeros(3)
-        for item in self.anno:
-            img_name = item["img_paths"]
-            img_path = os.path.join(self.imgpath, img_name)
-            img = cv.imread(img_path).transpose((2, 0, 1))   # HWC -> CHW
-            mean += img.reshape(img.shape[2], -1).mean(axis=0)
-            std += img.reshape(img.shape[2], -1).std(axis=1)
-        return mean / len(self.anno), std / len(self.anno)
+        if os.path.exists("./mean_std.json"):
+            with open("./mean_std.json", "r") as f:
+                m_s_json = json.load(f)
+            mean = m_s_json["mean"]
+            std = m_s_json["std"]
+            print("Get the mean and std of dataset from {}".format("mean_std.json"))
+        else:
+            print("Computing the mean and std of dataset \n It will take some time...")
+            for i in tqdm(range(len(self.anno))):
+                item = self.anno[i]
+                img_name = item["img_paths"]
+                img_path = os.path.join(self.imgpath, img_name)
+                img = cv.imread(img_path).transpose((2, 0, 1))   # HWC -> CHW
+                mean += img.reshape(img.shape[0], -1).mean(axis=1)
+                std += img.reshape(img.shape[0], -1).std(axis=1)
+            mean, std = mean / len(self.anno), std / len(self.anno)
+            json_info = {"mean": mean.tolist(), "std": std.tolist()}
+            with open("./mean_std.json", "w") as f:
+                print("mean: {} std: {}".format(mean, std))
+                print("Write them to the file: mean_std.json")
+                json.dump(f, json_info)
+        return mean, std
 
     def __getitem__(self, idx):
 
@@ -65,7 +81,7 @@ class MPIIData(mx.gluon.data.Dataset):
 
         cropimg, gtmap, metainfo = self._process_img(idx)
 
-        return cropimg, gtmap, metainfo
+        return cropimg, gtmap
 
     def _process_img(self, idx):
         '''
