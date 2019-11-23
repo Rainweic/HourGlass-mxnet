@@ -110,3 +110,4 @@ venv.bak/
 *.jpg
 
 .vscode
+.DS_Store
