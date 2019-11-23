@@ -11,4 +11,9 @@
 ## 环境依赖
 
     1. mxnet
-    2. opencv-python
+    
+
+## 报错提示
+
+    1. module 'scipy.misc' has no attribute 'imresize'
+        安装 scipy==1.2.1 Pillow==6.0.0

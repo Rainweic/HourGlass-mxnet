@@ -1,9 +1,9 @@
 # 部分代码参考至 感谢提供了学习资源
 # https://github.com/yuanyuanli85/Stacked_Hourglass_Network_Keras.git
 
-import numpy as np
 import scipy
-
+import cv2 as cv
+import numpy as np
 
 def get_transform(center, scale, res, rot=0):
     """
