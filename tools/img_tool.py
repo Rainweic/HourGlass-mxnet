@@ -1,8 +1,9 @@
 # 部分代码参考至 感谢提供了学习资源
 # https://github.com/yuanyuanli85/Stacked_Hourglass_Network_Keras.git
 
-import cv2 as cv
 import numpy as np
+import scipy
+
 
 def get_transform(center, scale, res, rot=0):
     """
@@ -33,6 +34,7 @@ def get_transform(center, scale, res, rot=0):
         t = np.dot(t_inv, np.dot(rot_mat, np.dot(t_mat, t)))
     return t
 
+
 def transform(pt, center, scale, res, invert=0, rot=0):
     # Transform pixel location to different reference
     t = get_transform(center, scale, res, rot=rot)
@@ -42,17 +44,18 @@ def transform(pt, center, scale, res, invert=0, rot=0):
     new_pt = np.dot(t, new_pt)
     return new_pt[:2].astype(int) + 1
 
+
 def crop(img, center, scale, res, rot=0):
     # Preprocessing for efficient cropping
-    height, width, _ = img.shape
-    sf = scale * 200 / res[0]
+    ht, wd = img.shape[0], img.shape[1]
+    sf = scale * 200.0 / res[0]
     if sf < 2:
         sf = 1
     else:
-        new_size = int(np.math.floor(max(height, width) / sf))
-        new_height = int(np.math.floor(height / sf))
-        new_width = int(np.math.floor(width / sf))
-        img = cv.resize(img, (new_height, new_width))   
+        new_size = int(np.math.floor(max(ht, wd) / sf))
+        new_ht = int(np.math.floor(ht / sf))
+        new_wd = int(np.math.floor(wd / sf))
+        img = scipy.misc.imresize(img, [new_ht, new_wd])
         center = center * 1.0 / sf
         scale = scale / sf
 
@@ -82,38 +85,25 @@ def crop(img, center, scale, res, rot=0):
 
     if not rot == 0:
         # Remove padding
-        center_point = (new_img.shape[1] // 2, new_img.shape[0] // 2)
-        M = cv.getRotationMatrix2D(center_point, 45, 1.0) #12
-        new_img = cv.warpAffine(new_img, M, (new_img.shape[1], new_img.shape[0])) #13
+        new_img = scipy.misc.imrotate(new_img, rot)
         new_img = new_img[pad:-pad, pad:-pad]
 
-    new_img = cv.resize(new_img, res)
+    new_img = scipy.misc.imresize(new_img, res)
     return new_img
 
-def normalize(img, mean):
-    img = img / 255.0
 
-    for i in range(img.shape[-1]):
-        img[:, :, i] -= mean[i]
+def normalize(imgdata, color_mean):
+    '''
+    :param imgdata: image in 0 ~ 255
+    :return:  image from 0.0 to 1.0
+    '''
+    imgdata = imgdata / 255.0
 
-    return img
+    for i in range(imgdata.shape[-1]):
+        imgdata[:, :, i] -= color_mean[i]
 
-def transform_kp(joints, center, scale, res, rot):
-    newjoints = np.copy(joints)
-    for i in range(joints.shape[0]):
-        if joints[i, 0] > 0 and joints[i, 1] > 0:
-            _x = transform(newjoints[i, 0:2] + 1, center=center, scale=scale, res=res, invert=0, rot=rot)
-            newjoints[i, 0:2] = _x
-    return newjoints
+    return imgdata
 
-def generate_gtmap(joints, sigma, outres):
-    npart = joints.shape[0]
-    gtmap = np.zeros(shape=(outres[0], outres[1], npart), dtype=float)
-    for i in range(npart):
-        visibility = joints[i, 2]
-        if visibility > 0:
-            gtmap[:, :, i] = draw_labelmap(gtmap[:, :, i], joints[i, :], sigma)
-    return gtmap
 
 def draw_labelmap(img, pt, sigma, type='Gaussian'):
     # Draw a 2D gaussian
@@ -147,3 +137,22 @@ def draw_labelmap(img, pt, sigma, type='Gaussian'):
 
     img[img_y[0]:img_y[1], img_x[0]:img_x[1]] = g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
     return img
+
+
+def transform_kp(joints, center, scale, res, rot):
+    newjoints = np.copy(joints)
+    for i in range(joints.shape[0]):
+        if joints[i, 0] > 0 and joints[i, 1] > 0:
+            _x = transform(newjoints[i, 0:2] + 1, center=center, scale=scale, res=res, invert=0, rot=rot)
+            newjoints[i, 0:2] = _x
+    return newjoints
+
+
+def generate_gtmap(joints, sigma, outres):
+    npart = joints.shape[0]
+    gtmap = np.zeros(shape=(outres[0], outres[1], npart), dtype=float)
+    for i in range(npart):
+        visibility = joints[i, 2]
+        if visibility > 0:
+            gtmap[:, :, i] = draw_labelmap(gtmap[:, :, i], joints[i, :], sigma)
+    return gtmap
