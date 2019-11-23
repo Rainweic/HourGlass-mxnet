@@ -22,6 +22,7 @@ parser.add_argument("--outRes", type=int, default=64, \
 
 # ---------------------Trainning options----------------------
 
+parser.add_argument("--epochs", type=int, default=240)
 parser.add_argument("--sigma", type=int, default=1)
 parser.add_argument("--isRot", type=bool, default=True, \
     help="Rote the train image or not")

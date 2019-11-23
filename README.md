@@ -12,7 +12,10 @@
 
     1. mxnet
     2. opencv-python
-    
+
+## 训练
+
+    1. 把MPII图片放在train_data/image内    
 
 ## 报错提示
 
