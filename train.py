@@ -12,7 +12,7 @@ from data_loader.mpii_data import MPIIData
 json_file = "./train_data/mpii_annotations.json"
 imgpath = "./train_data/images/"
 
-dataset = MPIIData(
+train_dataset = MPIIData(
     json_file, 
     imgpath, 
     (args.inRes, args.inRes), 
@@ -23,11 +23,26 @@ dataset = MPIIData(
     scale_flag = args.isFlip,
     flip_flag = args.isScale)
 
-dataloader = gluon.data.DataLoader(
-    dataset, 
-    batch_size = 4,
+train_dataloader = gluon.data.DataLoader(
+    train_dataset, 
+    batch_size = args.batchSize,
     shuffle = True,
     num_workers = args.nWorkers)
+
+val_dataset = MPIIData(
+    json_file, 
+    imgpath, 
+    (args.inRes, args.inRes), 
+    (args.outRes, args.outRes), 
+    is_train = False
+)
+
+val_dataloader = gluon.data.DataLoader(
+    val_dataset,
+    batch_size = args.batchSize,
+    shuffle = False,
+    num_workers = args.nWorkers
+)
 
 # ------------get model------------
 
@@ -35,9 +50,21 @@ if args.useGPU:
     ctx = mx.gpu()
 else:
     ctx = mx.cpu()
-model = getHourGlass(ctx=ctx)
+net = getHourGlass(ctx)
 
 # ------------gen Trainer------------
 
-for cropimg, heatmap in dataloader:
+trainer = gluon.Trainer(
+    net.collect_params(),
+    'sgd',
+    {'learning_rate': args.lr, 'wd': 0.0005, 'momentum': 0.9}
+)
+
+# ------------Loss------------
+
+loss = gluon.loss.L2Loss()
+
+# ------------train------------
+
+for cropimg, heatmap in train_dataloader:
     print(cropimg)
