@@ -146,7 +146,7 @@ class MPIIData(mx.gluon.data.Dataset):
         _, width, _ = img.shape
 
         # flip image
-        flip_img = cv.flip(img)
+        flip_img = cv.flip(img, 1)
 
         # flip joints
         joints[:, 0] = width - joints[:, 0]

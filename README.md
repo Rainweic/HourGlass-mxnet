@@ -11,6 +11,7 @@
 ## 环境依赖
 
     1. mxnet
+    2. opencv-python
     
 
 ## 报错提示
