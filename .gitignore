@@ -108,3 +108,5 @@ venv.bak/
 
 # train data
 *.jpg
+
+.vscode
