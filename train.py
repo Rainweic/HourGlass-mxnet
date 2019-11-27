@@ -71,6 +71,7 @@ def train():
 
     print("Training is started...")
     for epoch in tqdm(range(range(args.epochs))):
+        loss_mean = 0
         for i, (in_data, hm_label) in enumerate(train_dataloader):
             # 数据转移至GPU
             in_data = in_data.as_in_context(ctx)
@@ -86,3 +87,7 @@ def train():
             trainer.step(args.batchSize)
             loss_mean = loss.mean().asscalar()
             print("Epoch number {}\n Current loss {}\n".format(epoch, loss_mean))
+        sm.add_scalar("one_epoch_train_lossMean", loss_mean, global_step=epoch)
+
+    # 保存权重
+    net.export("Stacked Hourglass")
