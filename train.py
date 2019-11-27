@@ -1,10 +1,10 @@
 # Train Stacked Hourglass model with MPII
 
 import mxnet as mx
-from tqdm import tqdm
 from mxnet import gluon
 from mxnet import autograd
 from mxboard import SummaryWriter
+from progressbar import progressbar
 
 from config.config_args import args
 from model.HourGlass import getHourGlass
@@ -69,9 +69,11 @@ def train():
     )
 
     print("Training is started...")
-    for epoch in tqdm(range(args.epochs)):
+    for epoch in progressbar(range(args.epochs)):
         loss_mean = 0
-        for in_data, hm_label in tqdm(train_dataloader):
+        batch_times = 0   # 用于计数 控制输出
+        for in_data, hm_label in progressbar(train_dataloader):
+            batch_times += 1
             # 数据转移至GPU
             in_data = in_data.as_in_context(ctx)
             hm_label = hm_label.as_in_context(ctx)
@@ -85,8 +87,11 @@ def train():
             loss.backward()
             trainer.step(args.batchSize)
             loss_mean = loss.mean().asscalar()
-            print("Epoch number {}\n Current loss {}\n".format(epoch, loss_mean))
-        sm.add_scalar("one_epoch_train_lossMean", loss_mean, global_step=epoch)
+            if batch_times % 100 == 0: 
+                print("Epoch number {} [Batch Times {}]\n Current loss {}\n".format(epoch, \
+                     batch_times, loss_mean))
+                sm.add_scalar("one_epoch_train_lossMean", loss_mean, global_step=epoch)
+                
         if epoch == 0:
             sm.add_graph(net)
 

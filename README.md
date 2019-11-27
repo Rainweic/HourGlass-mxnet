@@ -12,6 +12,7 @@
 
     1. mxnet
     2. opencv-python
+    3. progressbar2
 
 ## 训练
 
