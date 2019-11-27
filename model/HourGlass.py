@@ -153,6 +153,6 @@ class Hourglass(nn.HybridBlock):
 def getHourGlass(ctx=mx.cpu()):
     model = Hourglass()
     model.initialize(init=mx.init.Xavier(), ctx=ctx)
-    model.hybridize()
+    model.hybridize(static_alloc=True, static_shape=True)
     return model
 

@@ -1,11 +1,17 @@
 # Train Stacked Hourglass model with MPII
 
 import mxnet as mx
+from tqdm import tqdm
 from mxnet import gluon
+from mxnet import autograd
+from mxboard import SummaryWriter
 
 from config.config_args import args
 from model.HourGlass import getHourGlass
 from data_loader.mpii_data import MPIIData
+
+# 使用mxboard 让训练可视化
+sm = SummaryWriter(logdir="logs", flush_secs=20)
 
 # ------------gen data--------------
 
@@ -51,20 +57,32 @@ if args.useGPU:
 else:
     ctx = mx.cpu()
 net = getHourGlass(ctx)
-
-# ------------gen Trainer------------
-
-trainer = gluon.Trainer(
-    net.collect_params(),
-    'sgd',
-    {'learning_rate': args.lr, 'wd': 0.0005, 'momentum': 0.9}
-)
-
-# ------------Loss------------
-
-loss = gluon.loss.L2Loss()
+sm.add_graph(net)
 
 # ------------train------------
+def train():
 
-for cropimg, heatmap in train_dataloader:
-    print(cropimg)
+    loss_fc = gluon.loss.L2Loss()
+    trainer = gluon.Trainer(
+        net.collect_params(),
+        'sgd',
+        {'learning_rate': args.lr, 'wd': 0.0005, 'momentum': 0.9}
+    )
+
+    print("Training is started...")
+    for epoch in tqdm(range(range(args.epochs))):
+        for i, (in_data, hm_label) in enumerate(train_dataloader):
+            # 数据转移至GPU
+            in_data = in_data.as_in_context(ctx)
+            hm_label = hm_label.as_in_context(ctx)
+            loss = None
+            with autograd.record():
+                # 前向传播
+                out = net(in_data)
+                # 计算Loss
+                for i in range(len(out)):
+                    loss += loss_fc(out[i], hm_label[i])
+            loss.backward()
+            trainer.step(args.batchSize)
+            loss_mean = loss.mean().asscalar()
+            print("Epoch number {}\n Current loss {}\n".format(epoch, loss_mean))
