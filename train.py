@@ -70,7 +70,6 @@ def train():
 
     print("Training is started...")
     for epoch in progressbar(range(args.epochs)):
-        loss_mean = 0
         batch_times = 0   # 用于计数 控制输出
         for in_data, hm_label in progressbar(train_dataloader):
             batch_times += 1
@@ -88,7 +87,7 @@ def train():
             trainer.step(args.batchSize)
             loss_mean = loss.mean().asscalar()
             if batch_times % 100 == 0: 
-                print("Epoch number {} [Batch Times {}]\n Current loss {}\n".format(epoch, \
+                print("Epoch number {} [Batch Times {}] Current loss {}".format(epoch, \
                      batch_times, loss_mean))
                 sm.add_scalar("one_epoch_train_lossMean", loss_mean, global_step=epoch)
                 
