@@ -57,7 +57,6 @@ if args.useGPU:
 else:
     ctx = mx.cpu()
 net = getHourGlass(ctx)
-sm.add_graph(net)
 
 # ------------train------------
 def train():
@@ -70,24 +69,28 @@ def train():
     )
 
     print("Training is started...")
-    for epoch in tqdm(range(range(args.epochs))):
+    for epoch in tqdm(range(args.epochs)):
         loss_mean = 0
-        for i, (in_data, hm_label) in enumerate(train_dataloader):
+        for in_data, hm_label in tqdm(train_dataloader):
             # 数据转移至GPU
             in_data = in_data.as_in_context(ctx)
             hm_label = hm_label.as_in_context(ctx)
-            loss = None
+            loss = mx.nd.zeros(shape=(8,), ctx=ctx)
             with autograd.record():
                 # 前向传播
                 out = net(in_data)
                 # 计算Loss
                 for i in range(len(out)):
-                    loss += loss_fc(out[i], hm_label[i])
+                    loss = loss + loss_fc(out[i], hm_label)
             loss.backward()
             trainer.step(args.batchSize)
             loss_mean = loss.mean().asscalar()
             print("Epoch number {}\n Current loss {}\n".format(epoch, loss_mean))
         sm.add_scalar("one_epoch_train_lossMean", loss_mean, global_step=epoch)
+        if epoch == 0:
+            sm.add_graph(net)
 
     # 保存权重
     net.export("Stacked Hourglass")
+
+train()

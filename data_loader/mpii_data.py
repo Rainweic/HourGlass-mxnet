@@ -129,8 +129,9 @@ class MPIIData(mx.gluon.data.Dataset):
             'tpts': transformedKps, 
             'name': img_name
         }
-
-        return cropimg, gtmap, metainfo
+        cropimg = cropimg.astype("float32")
+        gtmap = gtmap.astype("float32")
+        return cropimg.transpose((-1, 0, 1)), gtmap.transpose((-1, 0, 1)), metainfo
 
     def flip(self, img, joints, center):
         joints = np.copy(joints)

@@ -35,7 +35,7 @@ parser.add_argument("--isScale", type=bool, default=True, \
 
 # ---------------------Running options----------------------
 
-parser.add_argument("--useGPU", type=bool, default=False, \
+parser.add_argument("--useGPU", type=bool, default=True, \
     help="Use gpu or not(include train & run demo)")
 parser.add_argument("--nWorkers", type=int, default=0, \
     help="The number of multiprocessing workers to use for data preprocessing.")

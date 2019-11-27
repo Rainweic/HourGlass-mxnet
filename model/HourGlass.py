@@ -156,3 +156,5 @@ def getHourGlass(ctx=mx.cpu()):
     model.hybridize(static_alloc=True, static_shape=True)
     return model
 
+if __name__ == "__main__":
+    data = mx.nd.random.uniform(-1, 1, shape=(8))
