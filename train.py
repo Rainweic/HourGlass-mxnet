@@ -70,9 +70,7 @@ def train():
 
     print("Training is started...")
     for epoch in progressbar(range(args.epochs)):
-        batch_times = 0   # 用于计数 控制输出
-        for in_data, hm_label in progressbar(train_dataloader):
-            batch_times += 1
+        for batch_times, (in_data, hm_label) in enumerate(progressbar(train_dataloader)):
             # 数据转移至GPU
             in_data = in_data.as_in_context(ctx)
             hm_label = hm_label.as_in_context(ctx)
